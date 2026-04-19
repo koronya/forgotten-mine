@@ -21,7 +21,8 @@ export interface MoveEvent {
   player: PlayerId
   from: CellId
   to: CellId
-  kind: 'empty' | 'mine' | 'treasure'
+  kind: 'empty' | 'mine' | 'treasure' | 'forced'
   delta: number
+  alreadyClaimed?: boolean
   note?: string
 }

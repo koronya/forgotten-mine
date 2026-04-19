@@ -237,6 +237,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       to,
       kind: 'empty',
       delta: outcome.delta,
+      alreadyClaimed: outcome.alreadyClaimed,
       note,
     })
     set({
@@ -260,7 +261,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       player,
       from,
       to,
-      kind: 'empty',
+      kind: 'forced',
       delta: 0,
       note: '강제 이동 완료',
     })

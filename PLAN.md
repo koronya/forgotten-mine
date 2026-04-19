@@ -97,6 +97,17 @@ type Phase =
   | 'FORCED_MOVE'     // 지뢰 밟은 직후 강제 이동 선택 중
   | 'ENDED'
 
+interface MoveEvent {
+  seq: number
+  player: PlayerId
+  from: CellId
+  to: CellId
+  kind: 'empty' | 'mine' | 'treasure' | 'forced'
+  delta: number
+  alreadyClaimed?: boolean   // kind='empty'에서 재방문 여부 구분
+  note?: string
+}
+
 interface GameState {
   phase: Phase
   turn: 'p1' | 'p2'             // PLAYING 중 현재 턴
@@ -163,6 +174,14 @@ interface GameState {
 - 현재 턴(또는 강제이동 중 플레이어) 표시.
 - 수집된 보물 개수 / 3.
 - `moveLog` 역순 표시 — "P1이 f7로 이동 → +2점", "P2가 지뢰를 밟음 (-5), 강제 이동" 등 딜러 공지 역할.
+- **로그 하단 "이번 이동 결과" 메시지 패널** — 가장 최근 `MoveEvent` 하나를 사람이 읽기 좋은 문장 + 큰 점수 변화로 표시. `describeEvent` 분기:
+  - `mine`: "당신은 지뢰를 밟았습니다!" + `-5`
+  - `treasure`: "보물을 획득했습니다!" + `+10/15/20`
+  - `empty && alreadyClaimed`: "이 칸은 이미 방문한 적이 있는 곳입니다." + `0`
+  - `empty && !alreadyClaimed && delta > 0`: "현재 칸 주위에 N개의 지뢰가 있습니다." + `+N`
+  - `empty && !alreadyClaimed && delta === 0`: "현재 칸 주위에 지뢰가 없습니다." + `+0`
+  - `forced`: "강제 이동이 완료되었습니다." (숫자 미표시)
+- **지뢰 밟음 → 다음 방문 규칙**: 지뢰 밟은 칸은 `claimedCells`에 추가되지 않으므로, 이후 누가 다시 방문하면 "첫 방문 empty"로 평가되어 주변 지뢰 수만큼 점수 획득. 그 이후 방문은 `alreadyClaimed` 경로로 흐름. 별도 특수 처리 불필요 (기존 로직이 자연스럽게 충족).
 
 ### `EndScreen.tsx`
 - 최종 점수, 승자, "새 게임" 버튼.
