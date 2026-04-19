@@ -9,8 +9,6 @@ interface Props {
   pawn: PlayerId | null
   isOwnMine: boolean
   isForbidden: boolean
-  isClaimed: boolean
-  claimValue: number | null
   isMoveTarget: boolean
   disabled: boolean
   onClick: (id: CellId) => void
@@ -25,8 +23,6 @@ export function Cell({
   pawn,
   isOwnMine,
   isForbidden,
-  isClaimed,
-  claimValue,
   isMoveTarget,
   disabled,
   onClick,
@@ -36,7 +32,6 @@ export function Cell({
   if (isTreasure && !isTreasureTaken) classNames.push(styles.cellTreasure)
   if (isTreasure && isTreasureTaken) classNames.push(styles.cellTreasureTaken)
   if (isOwnMine) classNames.push(styles.cellMineOwn)
-  if (isClaimed && !pawn) classNames.push(styles.cellClaimed)
   if (pawn === 'p1') classNames.push(styles.cellPawnP1)
   if (pawn === 'p2') classNames.push(styles.cellPawnP2)
   if (isMoveTarget) classNames.push(styles.cellMoveTarget)
@@ -45,8 +40,6 @@ export function Cell({
   if (pawn) content = PAWN_LABEL[pawn]
   else if (isTreasure && !isTreasureTaken) content = '◆'
   else if (isOwnMine) content = '●'
-  else if (isClaimed && claimValue !== null)
-    content = <span className={styles.cellValue}>{claimValue}</span>
 
   return (
     <button

@@ -25,10 +25,8 @@ export function Board() {
   const turn = useGameStore((s) => s.turn)
   const mines = useGameStore((s) => s.mines)
   const pawns = useGameStore((s) => s.pawns)
-  const claimedCells = useGameStore((s) => s.claimedCells)
   const treasuresTaken = useGameStore((s) => s.treasuresTaken)
   const forcedMoveFor = useGameStore((s) => s.forcedMoveFor)
-  const moveLog = useGameStore((s) => s.moveLog)
   const togglePlacementMine = useGameStore((s) => s.togglePlacementMine)
   const movePawn = useGameStore((s) => s.movePawn)
   const resolveForcedMove = useGameStore((s) => s.resolveForcedMove)
@@ -48,16 +46,6 @@ export function Board() {
     }
     return new Set()
   }, [phase, turn, pawns, forcedMoveFor])
-
-  const claimValueByCell = useMemo(() => {
-    const map = new Map<CellId, number>()
-    for (const event of moveLog) {
-      if (event.kind === 'empty' && event.delta > 0) {
-        map.set(event.to, event.delta)
-      }
-    }
-    return map
-  }, [moveLog])
 
   const handleClick = (id: CellId) => {
     if (setupPlayer) {
@@ -121,8 +109,6 @@ export function Board() {
       const isOwnMine =
         setupPlayer !== null && mines[setupPlayer].has(id)
       const isForbidden = isForbiddenForMine(coord) && !isStartCell(coord)
-      const isClaimed = claimedCells.has(id)
-      const claimValue = claimValueByCell.get(id) ?? null
       const isMoveTarget = moveTargets.has(id)
       rows.push(
         <Cell
@@ -133,8 +119,6 @@ export function Board() {
           pawn={pawn}
           isOwnMine={isOwnMine}
           isForbidden={isForbidden}
-          isClaimed={isClaimed}
-          claimValue={claimValue}
           isMoveTarget={isMoveTarget}
           disabled={cellDisabled(id)}
           onClick={handleClick}
