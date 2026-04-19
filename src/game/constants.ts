@@ -5,7 +5,7 @@ export const MINE_COUNT = 15
 export const SETUP_SECONDS = 600
 export const MINE_PENALTY = -5
 export const TREASURE_SCORES = [10, 15, 20] as const
-export const START_FORBIDDEN_RADIUS = 2
+export const START_FORBIDDEN_RADIUS = 1
 
 export const TREASURES: Coord[] = [
   { row: 5, col: 5 },

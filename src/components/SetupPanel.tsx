@@ -38,7 +38,7 @@ export function SetupPanel({ player }: Props) {
         </span>
       </p>
       <p style={{ margin: '8px 0', fontSize: 12, color: '#9aa0ad' }}>
-        회색 칸은 배치 금지 구역(양쪽 시작점 주변 5×5, 보물 칸)입니다. 클릭해서 지뢰를 토글하세요.
+        회색 칸은 배치 금지 구역(양쪽 시작점 주변 2×2, 보물 칸)입니다. 클릭해서 지뢰를 토글하세요.
       </p>
       <button
         type="button"
