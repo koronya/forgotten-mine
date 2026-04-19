@@ -100,19 +100,6 @@ export function PlayPanel() {
       <p style={{ margin: '4px 0', fontSize: 13 }}>
         수집된 보물 {treasuresTaken.length} / 3
       </p>
-      <div className={styles.log} aria-live="polite">
-        {moveLog.length === 0 && (
-          <p className={styles.logLine} style={{ opacity: 0.6 }}>
-            아직 이동 기록이 없습니다.
-          </p>
-        )}
-        {[...moveLog].reverse().map((event) => (
-          <p key={event.seq} className={styles.logLine}>
-            <strong>{PLAYER_LABEL[event.player]}</strong>{' '}
-            {event.from} → {event.to} · {event.note}
-          </p>
-        ))}
-      </div>
 
       <div
         style={{
