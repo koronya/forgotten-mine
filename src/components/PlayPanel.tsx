@@ -8,6 +8,9 @@ export function PlayPanel() {
   const forcedMoveFor = useGameStore((s) => s.forcedMoveFor)
   const moveLog = useGameStore((s) => s.moveLog)
   const treasuresTaken = useGameStore((s) => s.treasuresTaken)
+  const mines = useGameStore((s) => s.mines)
+
+  const mineCellCount = new Set([...mines.p1, ...mines.p2]).size
 
   const activePlayer =
     phase === 'FORCED_MOVE' && forcedMoveFor ? forcedMoveFor : turn
@@ -18,6 +21,16 @@ export function PlayPanel() {
 
   return (
     <div className={styles.panel}>
+      <p
+        style={{
+          margin: '0 0 8px',
+          fontSize: 13,
+          color: '#9aa0ad',
+        }}
+      >
+        지뢰가 설치된 칸:{' '}
+        <strong style={{ color: '#ffd36b' }}>{mineCellCount}</strong>개
+      </p>
       <h2 className={styles.panelTitle}>{headline}</h2>
       <p style={{ margin: '4px 0', fontSize: 13 }}>
         수집된 보물 {treasuresTaken.length} / 3
