@@ -208,3 +208,14 @@ interface GameState {
 5. **지뢰 밟기**: 지뢰 칸 이동 시 -5, 해당 칸 지뢰 모두 제거, FORCED_MOVE 단계에서 자기 출발지 인접 3칸 중 선택해 강제 이동.
 6. **보물/종료**: 3개째 보물 획득 시 즉시 ENDED로 전이, 최종 점수로 승자 판정.
 7. **빌드 확인**: `npm run build` 성공.
+
+## 배포
+
+외부 공개 배포는 **GitHub Pages** (자동 배포) 와 **Synology NAS Web Station** (수동 업로드) 두 경로로 문서화했다. 상세 절차는 [`DEPLOY.md`](./DEPLOY.md) 참고.
+
+핵심 설정:
+- `vite.config.ts` 에 **모드별 base 분기** — `mode === 'gh-pages'` 일 때 `/forgotten-mine/`, 그 외 (`npm run build`, 로컬 preview, NAS 용) 은 `'./'`. 저장소 이름을 바꾸면 이 경로도 함께 변경.
+- `package.json` 에 `build` (NAS·로컬용) 와 `build:gh-pages` (GitHub Pages 용) 스크립트 분리.
+- `public/.nojekyll` — GitHub Pages 의 Jekyll 처리 비활성화 (Vite 산출물 안전 보호).
+- `.github/workflows/deploy.yml` — `main` push 시 `npm ci && npm run build:gh-pages` 후 `actions/upload-pages-artifact@v3` + `actions/deploy-pages@v4` 로 자동 배포.
+- NAS 는 `npm run build` 로 만든 `dist/` 를 `/web/forgotten-mine/` 에 수동 업로드, Web Station 포털을 통해 포트 기반 서빙.
