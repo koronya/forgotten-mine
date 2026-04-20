@@ -2,17 +2,9 @@
 
 ## Context
 
-`forgotten-mine/` 폴더에 보드게임 "망각의 지뢰"를 React + TypeScript + Vite 기반 **로컬 2인 핫시트** 웹게임으로 신규 구축한다. 첫 릴리즈 범위는 **본 게임(11×11 보드, 플레이어당 지뢰 15개)**로 한정한다.
+`forgotten-mine/` 폴더에 보드게임 "망각의 지뢰"를 React + TypeScript + Vite 기반 **로컬 2인 핫시트** 웹게임으로 신규 구축한다. 첫 릴리즈 범위는 본 게임으로 한정한다.
 
-핵심 의사결정:
-- 플레이 방식: 한 화면을 번갈아 쓰는 핫시트(서버 없음)
-- 보드/지뢰: 11×11, 플레이어당 15개
-- 지뢰 표시: 원작 규칙대로 **자기 지뢰도 배치 완료 후엔 숨김** (암기 게임)
-- 보물 위치: **a1, f6(중앙), k11** — 플레이어 시작 위치: **a11(P1), k1(P2)**
-- **지뢰 배치 금지 구역(시작점 기준)**: 각 시작점을 포함한 **2×2** 영역
-  - P1(a11) 주변: a10, a11, b10, b11
-  - P2(k1) 주변: j1, j2, k1, k2
-  - 보물 칸(a1, f6, k11)
+> ⚠️ 이 문서는 **초기 설계 스냅샷**이다. 게임 규칙은 이후에도 계속 업데이트되므로, 최신 규칙은 반드시 [`RULES.md`](./RULES.md) 를 참조할 것. PLAN.md 에 남아 있는 규칙 관련 수치/조건은 집필 시점 기준이며, 실제 구현과 차이가 생기면 RULES.md 가 우선한다.
 
 ## 아키텍처 개요
 
@@ -68,23 +60,10 @@ forgotten-mine/
 - `board.ts`에 `toId({row,col}) ↔ fromId(string)` 헬퍼.
 
 ### 상수 (`constants.ts`)
-```ts
-BOARD_SIZE = 11
-MINE_COUNT = 15
-TREASURES = [{row:5,col:5}, {row:0,col:0}, {row:10,col:10}]   // f6, a1, k11
-STARTS = { p1: {row:0,col:10}, p2: {row:10,col:0} }           // a11, k1
-TREASURE_SCORES = [10, 15, 20]
-MINE_PENALTY = -5
-SETUP_SECONDS = 600
-START_FORBIDDEN_RADIUS = 1   // 체비쇼프 ≤ 1 → 시작점 포함 2×2
-```
+규칙 수치(`BOARD_SIZE`, `MINE_COUNT`, `TREASURES`, `STARTS`, `TREASURE_SCORES`, `MINE_PENALTY`, `SETUP_SECONDS`, `START_FORBIDDEN_RADIUS`) 는 모두 `constants.ts` 한 곳에 모여 있다. **값의 정의와 의미는 [`RULES.md`](./RULES.md) 를 참조.** 규칙이 바뀌면 RULES.md → `constants.ts` 순으로 동기화한다.
 
 ### 지뢰 배치 금지 구역 (`placement.ts`)
-**체비쇼프 거리 ≤ 1** (시작점 포함 2×2 영역)로 해석.
-- P1(a11) 금지: **a10, a11, b10, b11**
-- P2(k1) 금지: **j1, j2, k1, k2**
-- 보물 칸(a1, f6, k11) 금지
-- 위 조건 외에도 같은 플레이어의 지뢰는 한 칸에 1개만(규칙 명시). 상대와 겹치는 건 허용.
+구현 요약: **체비쇼프 거리 ≤ 1** (시작점 포함 2×2 영역) + 보물 칸을 금지 구역으로 판정. 금지 구역의 구체 목록과 "같은 플레이어 한 칸 1개" 같은 세부 규칙은 [`RULES.md`](./RULES.md) 를 참조.
 
 ### GameState (zustand)
 ```ts
@@ -133,15 +112,10 @@ interface GameState {
 - `resetGame()` — 전체 초기화.
 
 ### 이동 결과 해석 (`scoring.ts`)
-순서대로 평가:
-1. 대상 칸이 보물이면: `TREASURE_SCORES[treasuresTaken.length]` 획득, 보물 제거. 3개 모두 수집 시 `phase = 'ENDED'`.
-2. 대상 칸에 **양 플레이어 지뢰 합계 ≥ 1**이면: -5, 해당 칸의 모든 지뢰 제거, `phase = 'FORCED_MOVE'`. 플레이어가 자기 출발지 인접 칸(보드 내, 상대 말 없는 곳) 중 선택해 이동.
-3. 그 외(빈 칸): `claimedCells`에 없을 때만 주변 8칸 지뢰 개수(중복 포함) 만큼 득점, `claimedCells`에 추가.
+`scoring.ts` 는 "보물 → 지뢰 → 빈 칸" 순서로 대상 칸을 평가한다. 각 분기의 점수/부수 효과(보물 제거, 지뢰 제거, `FORCED_MOVE` 전이, `claimedCells` 갱신) 의 세부 규칙은 [`RULES.md`](./RULES.md) 를 단일 출처로 삼는다. 평가 "순서" 자체가 규칙이므로 바꾸면 안 된다.
 
 ### 이동 규칙 (`moves.ts`)
-- 현재 말 기준 8방 인접 중 **상대 말이 아닌 칸**만 허용.
-- 보드 밖 금지.
-- 강제이동 시: 자기 출발지 기준 8방 중 보드 내·상대 말이 없는 칸만 후보 (코너라서 최대 3칸).
+`moves.ts` 는 일반 이동과 강제 이동의 합법 타겟을 계산한다. 구체 조건(8방 인접, 상대 말 제외, 보드 밖 금지 등) 은 [`RULES.md`](./RULES.md) 참조.
 
 ## UI / 컴포넌트 동작
 
