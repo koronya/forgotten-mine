@@ -65,6 +65,7 @@ export function PlayPanel() {
   const moveLog = useGameStore((s) => s.moveLog)
   const treasuresTaken = useGameStore((s) => s.treasuresTaken)
   const mines = useGameStore((s) => s.mines)
+  const names = useGameStore((s) => s.names)
   const pendingMove = useGameStore((s) => s.pendingMove)
   const confirmPendingMove = useGameStore((s) => s.confirmPendingMove)
   const cancelPendingMove = useGameStore((s) => s.cancelPendingMove)
@@ -73,10 +74,11 @@ export function PlayPanel() {
 
   const activePlayer =
     phase === 'FORCED_MOVE' && forcedMoveFor ? forcedMoveFor : turn
+  const activeName = names[activePlayer] || PLAYER_LABEL[activePlayer]
   const headline =
     phase === 'FORCED_MOVE'
-      ? `${PLAYER_LABEL[activePlayer]} — 강제 이동할 칸을 선택하세요`
-      : `${PLAYER_LABEL[activePlayer]} 차례`
+      ? `${activeName} — 강제 이동할 칸을 선택하세요`
+      : `${activeName} 차례`
 
   const lastEvent = moveLog[moveLog.length - 1]
   const eventMessage = lastEvent ? describeEvent(lastEvent) : null

@@ -5,6 +5,7 @@ import { HandoffScreen } from './components/HandoffScreen'
 import { PlayPanel } from './components/PlayPanel'
 import { EndScreen } from './components/EndScreen'
 import { RulesModal } from './components/RulesModal'
+import { NameEntryScreen } from './components/NameEntryScreen'
 import { PLAYER_LABEL } from './game/constants'
 import { useGameStore } from './store/gameStore'
 
@@ -12,9 +13,13 @@ export default function App() {
   const phase = useGameStore((s) => s.phase)
   const turn = useGameStore((s) => s.turn)
   const scores = useGameStore((s) => s.scores)
+  const names = useGameStore((s) => s.names)
 
   const activeForScore =
     phase === 'PLAYING' ? turn : phase === 'FORCED_MOVE' ? turn : null
+
+  const p1Label = names.p1 || PLAYER_LABEL.p1
+  const p2Label = names.p2 || PLAYER_LABEL.p2
 
   return (
     <div className={styles.page}>
@@ -26,14 +31,14 @@ export default function App() {
               activeForScore === 'p1' ? styles.scoreBadgeActive : ''
             }`}
           >
-            {PLAYER_LABEL.p1} {scores.p1}점
+            {p1Label} {scores.p1}점
           </div>
           <div
             className={`${styles.scoreBadge} ${
               activeForScore === 'p2' ? styles.scoreBadgeActive : ''
             }`}
           >
-            {PLAYER_LABEL.p2} {scores.p2}점
+            {p2Label} {scores.p2}점
           </div>
           <RulesModal />
         </div>
@@ -48,11 +53,13 @@ export default function App() {
         </div>
       </div>
 
+      {phase === 'NAME_ENTRY' && <NameEntryScreen />}
+
       {phase === 'HANDOFF_TO_P2' && (
         <HandoffScreen
-          title="플레이어 2에게 넘겨주세요"
-          description="플레이어 1의 지뢰 배치가 완료되었습니다. 이제 플레이어 2가 지뢰를 배치할 차례입니다. 화면을 전달한 뒤 [시작] 버튼을 눌러주세요."
-          buttonLabel="플레이어 2 배치 시작"
+          title={`${p2Label}에게 넘겨주세요`}
+          description={`${p1Label}의 지뢰 배치가 완료되었습니다. 이제 ${p2Label}가 지뢰를 배치할 차례입니다. 화면을 전달한 뒤 [시작] 버튼을 눌러주세요.`}
+          buttonLabel={`${p2Label} 배치 시작`}
         />
       )}
 

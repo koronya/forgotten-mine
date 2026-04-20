@@ -12,6 +12,7 @@ interface Props {
 export function SetupPanel({ player }: Props) {
   const minesSize = useGameStore((s) => s.mines[player].size)
   const deadline = useGameStore((s) => s.setupDeadline)
+  const name = useGameStore((s) => s.names[player])
   const submit = useGameStore((s) => s.submitMines)
   const autoFill = useGameStore((s) => s.autoFillAndSubmit)
 
@@ -24,10 +25,11 @@ export function SetupPanel({ player }: Props) {
   }, [remaining, autoFill, player])
 
   const canSubmit = minesSize === MINE_COUNT
+  const displayName = name || PLAYER_LABEL[player]
 
   return (
     <div className={styles.panel}>
-      <h2 className={styles.panelTitle}>{PLAYER_LABEL[player]} 지뢰 배치</h2>
+      <h2 className={styles.panelTitle}>{displayName} 지뢰 배치</h2>
       <p style={{ margin: '4px 0' }}>
         배치 {minesSize} / {MINE_COUNT}
       </p>

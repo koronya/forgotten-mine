@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { toId } from '../game/board'
 import {
   MINE_COUNT,
+  PLAYER_LABEL,
   SETUP_SECONDS,
   STARTS,
   TREASURES,
@@ -14,6 +15,7 @@ import type { CellId, MoveEvent, Phase, PlayerId } from '../game/types'
 interface GameState {
   phase: Phase
   turn: PlayerId
+  names: { p1: string; p2: string }
   mines: { p1: Set<CellId>; p2: Set<CellId> }
   pawns: { p1: CellId; p2: CellId }
   scores: { p1: number; p2: number }
@@ -24,6 +26,7 @@ interface GameState {
   forcedMoveFor: PlayerId | null
   pendingMove: CellId | null
   logSeq: number
+  setPlayerNames: (p1Name: string, p2Name: string) => void
   togglePlacementMine: (player: PlayerId, cellId: CellId) => void
   submitMines: (player: PlayerId) => boolean
   skipHandoff: () => void
@@ -40,6 +43,7 @@ function initialPawns(): { p1: CellId; p2: CellId } {
 
 function createInitial(): Omit<
   GameState,
+  | 'setPlayerNames'
   | 'togglePlacementMine'
   | 'submitMines'
   | 'skipHandoff'
@@ -50,15 +54,16 @@ function createInitial(): Omit<
   | 'autoFillAndSubmit'
 > {
   return {
-    phase: 'SETUP_P1',
+    phase: 'NAME_ENTRY',
     turn: 'p1',
+    names: { p1: '', p2: '' },
     mines: { p1: new Set(), p2: new Set() },
     pawns: initialPawns(),
     scores: { p1: 0, p2: 0 },
     claimedCells: new Set(),
     treasuresTaken: [],
     moveLog: [],
-    setupDeadline: Date.now() + SETUP_SECONDS * 1000,
+    setupDeadline: null,
     forcedMoveFor: null,
     pendingMove: null,
     logSeq: 0,
@@ -78,6 +83,18 @@ function appendLog(
 
 export const useGameStore = create<GameState>((set, get) => ({
   ...createInitial(),
+
+  setPlayerNames: (p1Name, p2Name) => {
+    const state = get()
+    if (state.phase !== 'NAME_ENTRY') return
+    const p1 = p1Name.trim() || PLAYER_LABEL.p1
+    const p2 = p2Name.trim() || PLAYER_LABEL.p2
+    set({
+      names: { p1, p2 },
+      phase: 'SETUP_P1',
+      setupDeadline: Date.now() + SETUP_SECONDS * 1000,
+    })
+  },
 
   togglePlacementMine: (player, cellId) => {
     const state = get()
@@ -312,5 +329,8 @@ export const useGameStore = create<GameState>((set, get) => ({
     }
   },
 
-  resetGame: () => set({ ...createInitial() }),
+  resetGame: () => {
+    const previousNames = get().names
+    set({ ...createInitial(), names: previousNames })
+  },
 }))

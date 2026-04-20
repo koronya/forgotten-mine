@@ -8,6 +8,7 @@ export interface Coord {
 export type CellId = string
 
 export type Phase =
+  | 'NAME_ENTRY'
   | 'SETUP_P1'
   | 'HANDOFF_TO_P2'
   | 'SETUP_P2'

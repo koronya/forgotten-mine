@@ -29,8 +29,11 @@ npm run lint             # tsc --noEmit 타입 체크
 ### Phase 기계
 
 ```
-SETUP_P1 → HANDOFF_TO_P2 → SETUP_P2 → HANDOFF_TO_PLAY → PLAYING ⇄ FORCED_MOVE → ENDED
+NAME_ENTRY → SETUP_P1 → HANDOFF_TO_P2 → SETUP_P2 → HANDOFF_TO_PLAY → PLAYING ⇄ FORCED_MOVE → ENDED
 ```
+
+- `NAME_ENTRY`에서 양 플레이어 이름을 입력받아 `names: { p1, p2 }` 스토어에 저장. 빈 입력은 `PLAYER_LABEL` 기본값으로 치환. 이후 모든 UI 텍스트(스코어 뱃지, Setup/Play/End/Handoff)에서는 `names[player] || PLAYER_LABEL[player]` 패턴으로 표시.
+- `resetGame`은 이름을 보존한 채 `NAME_ENTRY`로 돌아가 재대결 시 재입력 부담을 줄인다.
 
 - `PLAYING`에서 셀 클릭은 **즉시 이동하지 않고** `pendingMove`에 설정 → `PlayPanel`의 예/아니오 버튼으로 `confirmPendingMove()` / `cancelPendingMove()`. 오클릭 방어용이므로 이 2단계 확정 흐름을 건너뛰지 말 것.
 - `FORCED_MOVE`도 같은 pending/confirm 흐름을 탄다.

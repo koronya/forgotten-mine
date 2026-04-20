@@ -134,3 +134,19 @@
   color: #ffd36b;
   font-weight: 700;
 }
+
+.input {
+  background: #1a1d24;
+  color: #e7eaf0;
+  border: 1px solid #4a5060;
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-size: 14px;
+  font-family: inherit;
+}
+
+.input:focus {
+  outline: none;
+  border-color: #ffd36b;
+  box-shadow: 0 0 0 1px #ffd36b inset;
+}
