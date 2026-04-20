@@ -50,6 +50,7 @@ export default function App() {
           {phase === 'SETUP_P1' && <SetupPanel player="p1" />}
           {phase === 'SETUP_P2' && <SetupPanel player="p2" />}
           {(phase === 'PLAYING' || phase === 'FORCED_MOVE') && <PlayPanel />}
+          {phase === 'ENDED' && <EndScreen />}
         </div>
       </div>
 
@@ -70,8 +71,6 @@ export default function App() {
           buttonLabel="게임 시작"
         />
       )}
-
-      {phase === 'ENDED' && <EndScreen />}
     </div>
   )
 }

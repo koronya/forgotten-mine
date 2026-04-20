@@ -67,6 +67,30 @@
   color: #ff9eb2;
 }
 
+.cellMineP1 {
+  background: #1f2f55;
+  border-color: #4a6fb5;
+  color: #b7d0ff;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.cellMineP2 {
+  background: #4a2a1f;
+  border-color: #b5714a;
+  color: #ffc9b7;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.cellMineBoth {
+  background: linear-gradient(135deg, #1f2f55 0%, #1f2f55 48%, #4a2a1f 52%, #4a2a1f 100%);
+  border-color: #8a5b9a;
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 700;
+}
+
 .cellClaimed {
   background: #1f2a22;
   border-color: #2f4036;

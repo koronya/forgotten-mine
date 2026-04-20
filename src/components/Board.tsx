@@ -11,7 +11,7 @@ import { legalMoves, forcedMoveCandidates } from '../game/moves'
 import { isForbiddenForMine } from '../game/placement'
 import { useGameStore } from '../store/gameStore'
 import type { CellId, PlayerId } from '../game/types'
-import { Cell } from './Cell'
+import { Cell, type MineReveal } from './Cell'
 
 function useSetupPlayer(): PlayerId | null {
   const phase = useGameStore((s) => s.phase)
@@ -24,6 +24,7 @@ export function Board() {
   const phase = useGameStore((s) => s.phase)
   const turn = useGameStore((s) => s.turn)
   const mines = useGameStore((s) => s.mines)
+  const initialMines = useGameStore((s) => s.initialMines)
   const pawns = useGameStore((s) => s.pawns)
   const treasuresTaken = useGameStore((s) => s.treasuresTaken)
   const forcedMoveFor = useGameStore((s) => s.forcedMoveFor)
@@ -102,8 +103,16 @@ export function Board() {
         pawns.p1 === id ? 'p1' : pawns.p2 === id ? 'p2' : null
       const isTreasure = isTreasureCell(coord)
       const isTreasureTaken = treasuresTaken.includes(id)
-      const isOwnMine =
-        setupPlayer !== null && mines[setupPlayer].has(id)
+      let mineReveal: MineReveal = null
+      if (phase === 'ENDED') {
+        const inP1 = initialMines.p1.has(id)
+        const inP2 = initialMines.p2.has(id)
+        if (inP1 && inP2) mineReveal = 'both'
+        else if (inP1) mineReveal = 'p1'
+        else if (inP2) mineReveal = 'p2'
+      } else if (setupPlayer !== null && mines[setupPlayer].has(id)) {
+        mineReveal = 'own'
+      }
       const isForbidden = isForbiddenForMine(coord) && !isStartCell(coord)
       const isMoveTarget = moveTargets.has(id)
       const isPendingMove = pendingMove === id
@@ -114,7 +123,7 @@ export function Board() {
           isTreasure={isTreasure}
           isTreasureTaken={isTreasureTaken}
           pawn={pawn}
-          isOwnMine={isOwnMine}
+          mineReveal={mineReveal}
           isForbidden={isForbidden}
           isMoveTarget={isMoveTarget}
           isPendingMove={isPendingMove}

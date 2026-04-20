@@ -17,6 +17,7 @@ interface GameState {
   turn: PlayerId
   names: { p1: string; p2: string }
   mines: { p1: Set<CellId>; p2: Set<CellId> }
+  initialMines: { p1: Set<CellId>; p2: Set<CellId> }
   pawns: { p1: CellId; p2: CellId }
   scores: { p1: number; p2: number }
   claimedCells: Set<CellId>
@@ -58,6 +59,7 @@ function createInitial(): Omit<
     turn: 'p1',
     names: { p1: '', p2: '' },
     mines: { p1: new Set(), p2: new Set() },
+    initialMines: { p1: new Set(), p2: new Set() },
     pawns: initialPawns(),
     scores: { p1: 0, p2: 0 },
     claimedCells: new Set(),
@@ -162,7 +164,14 @@ export const useGameStore = create<GameState>((set, get) => ({
         setupDeadline: Date.now() + SETUP_SECONDS * 1000,
       })
     } else if (state.phase === 'HANDOFF_TO_PLAY') {
-      set({ phase: 'PLAYING', turn: 'p1' })
+      set({
+        phase: 'PLAYING',
+        turn: 'p1',
+        initialMines: {
+          p1: new Set(state.mines.p1),
+          p2: new Set(state.mines.p2),
+        },
+      })
     }
   },
 

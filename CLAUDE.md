@@ -34,6 +34,7 @@ NAME_ENTRY → SETUP_P1 → HANDOFF_TO_P2 → SETUP_P2 → HANDOFF_TO_PLAY → P
 
 - `NAME_ENTRY`에서 양 플레이어 이름을 입력받아 `names: { p1, p2 }` 스토어에 저장. 빈 입력은 `PLAYER_LABEL` 기본값으로 치환. 이후 모든 UI 텍스트(스코어 뱃지, Setup/Play/End/Handoff)에서는 `names[player] || PLAYER_LABEL[player]` 패턴으로 표시.
 - `resetGame`은 이름을 보존한 채 `NAME_ENTRY`로 돌아가 재대결 시 재입력 부담을 줄인다.
+- `skipHandoff`가 `HANDOFF_TO_PLAY → PLAYING` 으로 넘어가는 순간 `initialMines` 에 양 플레이어 지뢰 Set 을 스냅샷한다. 본 게임 중 `mines` 는 지뢰가 밟혀 제거되며 변하지만, `initialMines` 는 불변으로 유지되어 `ENDED` phase 의 최종 지뢰 공개 UI(Cell `mineReveal`: `'p1' | 'p2' | 'both'`) 가 이를 읽는다.
 
 - `PLAYING`에서 셀 클릭은 **즉시 이동하지 않고** `pendingMove`에 설정 → `PlayPanel`의 예/아니오 버튼으로 `confirmPendingMove()` / `cancelPendingMove()`. 오클릭 방어용이므로 이 2단계 확정 흐름을 건너뛰지 말 것.
 - `FORCED_MOVE`도 같은 pending/confirm 흐름을 탄다.
@@ -55,7 +56,7 @@ NAME_ENTRY → SETUP_P1 → HANDOFF_TO_P2 → SETUP_P2 → HANDOFF_TO_PLAY → P
 
 ### UI 불변식 (중요)
 
-- **본 게임 중 보드에는 방문 이력/득점 숫자를 일절 표시하지 않는다.** `claimedCells`는 store에서 점수 계산 용도로만 유지되고 Cell에 렌더하지 않는다. 이 게임은 암기가 핵심이라 UI에 힌트를 남기면 규칙 자체가 깨진다.
+- **본 게임 중(PLAYING / FORCED_MOVE) 보드에는 방문 이력/득점 숫자를 일절 표시하지 않는다.** `claimedCells`는 store에서 점수 계산 용도로만 유지되고 Cell에 렌더하지 않는다. 이 게임은 암기가 핵심이라 UI에 힌트를 남기면 규칙 자체가 깨진다. 단 `ENDED` phase 에서는 `initialMines` 기반으로 최종 지뢰 배치를 공개해도 된다(게임 종료 후 복기용).
 - 배치 중(`SETUP_*`)에만 **자기** 지뢰가 보이고, `HANDOFF_*` 이후로는 사라져야 한다.
 - `PlayPanel`은 최신 `MoveEvent` 하나만 "이번 이동 결과"로 보여준다. 누적 이동 로그는 UI에 노출하지 않는다 (`moveLog`는 최신 이벤트 참조용으로만 store에 유지).
 - 지뢰가 설치된 칸 수는 공개한다(규칙). 양 플레이어 지뢰 Set 합집합 크기로 계산.
