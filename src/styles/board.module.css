@@ -78,6 +78,13 @@
   outline-offset: -2px;
 }
 
+.cellMovePending {
+  outline: 3px solid #7ee28a;
+  outline-offset: -3px;
+  background: #2a3a2f;
+  box-shadow: 0 0 0 1px #7ee28a inset;
+}
+
 .cellPawnP1,
 .cellPawnP2 {
   font-size: 18px;

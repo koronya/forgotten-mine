@@ -65,6 +65,9 @@ export function PlayPanel() {
   const moveLog = useGameStore((s) => s.moveLog)
   const treasuresTaken = useGameStore((s) => s.treasuresTaken)
   const mines = useGameStore((s) => s.mines)
+  const pendingMove = useGameStore((s) => s.pendingMove)
+  const confirmPendingMove = useGameStore((s) => s.confirmPendingMove)
+  const cancelPendingMove = useGameStore((s) => s.cancelPendingMove)
 
   const mineCellCount = new Set([...mines.p1, ...mines.p2]).size
 
@@ -100,6 +103,48 @@ export function PlayPanel() {
       <p style={{ margin: '4px 0', fontSize: 13 }}>
         수집된 보물 {treasuresTaken.length} / 3
       </p>
+
+      {pendingMove && (
+        <div
+          style={{
+            marginTop: 10,
+            padding: '12px 14px',
+            borderRadius: 8,
+            background: '#2a3a2f',
+            border: '1px solid #7ee28a',
+          }}
+          aria-live="polite"
+        >
+          <p style={{ margin: 0, fontSize: 14, lineHeight: 1.4 }}>
+            <strong style={{ color: '#7ee28a' }}>{pendingMove}</strong>
+            으로 이동하시겠습니까?
+          </p>
+          <div
+            style={{
+              display: 'flex',
+              gap: 8,
+              marginTop: 10,
+            }}
+          >
+            <button
+              type="button"
+              className={styles.primaryBtn}
+              style={{ flex: 1 }}
+              onClick={confirmPendingMove}
+            >
+              예
+            </button>
+            <button
+              type="button"
+              className={styles.secondaryBtn}
+              style={{ flex: 1 }}
+              onClick={cancelPendingMove}
+            >
+              아니오
+            </button>
+          </div>
+        </div>
+      )}
 
       <div
         style={{

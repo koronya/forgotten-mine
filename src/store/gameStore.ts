@@ -22,12 +22,14 @@ interface GameState {
   moveLog: MoveEvent[]
   setupDeadline: number | null
   forcedMoveFor: PlayerId | null
+  pendingMove: CellId | null
   logSeq: number
   togglePlacementMine: (player: PlayerId, cellId: CellId) => void
   submitMines: (player: PlayerId) => boolean
   skipHandoff: () => void
-  movePawn: (to: CellId) => void
-  resolveForcedMove: (to: CellId) => void
+  proposeMove: (to: CellId) => void
+  confirmPendingMove: () => void
+  cancelPendingMove: () => void
   resetGame: () => void
   autoFillAndSubmit: (player: PlayerId) => void
 }
@@ -41,8 +43,9 @@ function createInitial(): Omit<
   | 'togglePlacementMine'
   | 'submitMines'
   | 'skipHandoff'
-  | 'movePawn'
-  | 'resolveForcedMove'
+  | 'proposeMove'
+  | 'confirmPendingMove'
+  | 'cancelPendingMove'
   | 'resetGame'
   | 'autoFillAndSubmit'
 > {
@@ -57,6 +60,7 @@ function createInitial(): Omit<
     moveLog: [],
     setupDeadline: Date.now() + SETUP_SECONDS * 1000,
     forcedMoveFor: null,
+    pendingMove: null,
     logSeq: 0,
   }
 }
@@ -145,133 +149,167 @@ export const useGameStore = create<GameState>((set, get) => ({
     }
   },
 
-  movePawn: (to) => {
+  proposeMove: (to) => {
     const state = get()
-    if (state.phase !== 'PLAYING') return
-    const player = state.turn
-    const from = state.pawns[player]
-    const opponent: PlayerId = player === 'p1' ? 'p2' : 'p1'
-    const opponentPawn = state.pawns[opponent]
-    if (!isLegalMove(from, to, opponentPawn)) return
+    if (state.phase === 'PLAYING') {
+      const player = state.turn
+      const opponent: PlayerId = player === 'p1' ? 'p2' : 'p1'
+      if (!isLegalMove(state.pawns[player], to, state.pawns[opponent])) return
+      set({ pendingMove: to })
+      return
+    }
+    if (state.phase === 'FORCED_MOVE' && state.forcedMoveFor) {
+      const player = state.forcedMoveFor
+      const opponent: PlayerId = player === 'p1' ? 'p2' : 'p1'
+      const candidates = forcedMoveCandidates(player, state.pawns[opponent])
+      if (!candidates.includes(to)) return
+      set({ pendingMove: to })
+      return
+    }
+  },
 
-    const outcome = evaluateMove(
-      to,
-      state.mines,
-      state.treasuresTaken,
-      state.claimedCells,
-    )
+  cancelPendingMove: () => set({ pendingMove: null }),
 
-    if (outcome.kind === 'treasure') {
-      const nextTaken = [...state.treasuresTaken, to]
+  confirmPendingMove: () => {
+    const state = get()
+    const to = state.pendingMove
+    if (!to) return
+
+    if (state.phase === 'PLAYING') {
+      const player = state.turn
+      const from = state.pawns[player]
+      const opponent: PlayerId = player === 'p1' ? 'p2' : 'p1'
+      const opponentPawn = state.pawns[opponent]
+      if (!isLegalMove(from, to, opponentPawn)) {
+        set({ pendingMove: null })
+        return
+      }
+
+      const outcome = evaluateMove(
+        to,
+        state.mines,
+        state.treasuresTaken,
+        state.claimedCells,
+      )
+
+      if (outcome.kind === 'treasure') {
+        const nextTaken = [...state.treasuresTaken, to]
+        const pawns = { ...state.pawns, [player]: to }
+        const scores = {
+          ...state.scores,
+          [player]: state.scores[player] + outcome.delta,
+        }
+        const logged = appendLog(state, {
+          player,
+          from,
+          to,
+          kind: 'treasure',
+          delta: outcome.delta,
+          note: `보물 획득 (+${outcome.delta})`,
+        })
+        const allTaken = nextTaken.length >= TREASURES.length
+        set({
+          pawns,
+          scores,
+          treasuresTaken: nextTaken,
+          ...logged,
+          phase: allTaken ? 'ENDED' : 'PLAYING',
+          turn: allTaken ? player : opponent,
+          pendingMove: null,
+        })
+        return
+      }
+
+      if (outcome.kind === 'mine') {
+        const nextMines = {
+          p1: new Set(state.mines.p1),
+          p2: new Set(state.mines.p2),
+        }
+        nextMines.p1.delete(to)
+        nextMines.p2.delete(to)
+        const scores = {
+          ...state.scores,
+          [player]: state.scores[player] + outcome.delta,
+        }
+        const logged = appendLog(state, {
+          player,
+          from,
+          to,
+          kind: 'mine',
+          delta: outcome.delta,
+          note: `지뢰 밟음 (${outcome.delta}) — 강제 이동`,
+        })
+        set({
+          mines: nextMines,
+          scores,
+          ...logged,
+          phase: 'FORCED_MOVE',
+          forcedMoveFor: player,
+          pawns: { ...state.pawns, [player]: to },
+          pendingMove: null,
+        })
+        return
+      }
+
       const pawns = { ...state.pawns, [player]: to }
+      const claimedCells = outcome.alreadyClaimed
+        ? state.claimedCells
+        : new Set(state.claimedCells).add(to)
       const scores = {
         ...state.scores,
         [player]: state.scores[player] + outcome.delta,
       }
+      const note = outcome.alreadyClaimed
+        ? '기획득 칸 (+0)'
+        : outcome.delta > 0
+          ? `주변 지뢰 ${outcome.delta}개 (+${outcome.delta})`
+          : '빈 칸 (+0)'
       const logged = appendLog(state, {
         player,
         from,
         to,
-        kind: 'treasure',
+        kind: 'empty',
         delta: outcome.delta,
-        note: `보물 획득 (+${outcome.delta})`,
+        alreadyClaimed: outcome.alreadyClaimed,
+        note,
       })
-      const allTaken = nextTaken.length >= TREASURES.length
       set({
         pawns,
         scores,
-        treasuresTaken: nextTaken,
+        claimedCells,
         ...logged,
-        phase: allTaken ? 'ENDED' : 'PLAYING',
-        turn: allTaken ? player : opponent,
+        turn: opponent,
+        pendingMove: null,
       })
       return
     }
 
-    if (outcome.kind === 'mine') {
-      const nextMines = {
-        p1: new Set(state.mines.p1),
-        p2: new Set(state.mines.p2),
+    if (state.phase === 'FORCED_MOVE' && state.forcedMoveFor) {
+      const player = state.forcedMoveFor
+      const opponent: PlayerId = player === 'p1' ? 'p2' : 'p1'
+      const candidates = forcedMoveCandidates(player, state.pawns[opponent])
+      if (!candidates.includes(to)) {
+        set({ pendingMove: null })
+        return
       }
-      nextMines.p1.delete(to)
-      nextMines.p2.delete(to)
-      const scores = {
-        ...state.scores,
-        [player]: state.scores[player] + outcome.delta,
-      }
+      const from = state.pawns[player]
       const logged = appendLog(state, {
         player,
         from,
         to,
-        kind: 'mine',
-        delta: outcome.delta,
-        note: `지뢰 밟음 (${outcome.delta}) — 강제 이동`,
+        kind: 'forced',
+        delta: 0,
+        note: '강제 이동 완료',
       })
       set({
-        mines: nextMines,
-        scores,
-        ...logged,
-        phase: 'FORCED_MOVE',
-        forcedMoveFor: player,
         pawns: { ...state.pawns, [player]: to },
+        forcedMoveFor: null,
+        phase: 'PLAYING',
+        turn: opponent,
+        pendingMove: null,
+        ...logged,
       })
-      return
     }
-
-    const pawns = { ...state.pawns, [player]: to }
-    const claimedCells = outcome.alreadyClaimed
-      ? state.claimedCells
-      : new Set(state.claimedCells).add(to)
-    const scores = {
-      ...state.scores,
-      [player]: state.scores[player] + outcome.delta,
-    }
-    const note = outcome.alreadyClaimed
-      ? '기획득 칸 (+0)'
-      : outcome.delta > 0
-        ? `주변 지뢰 ${outcome.delta}개 (+${outcome.delta})`
-        : '빈 칸 (+0)'
-    const logged = appendLog(state, {
-      player,
-      from,
-      to,
-      kind: 'empty',
-      delta: outcome.delta,
-      alreadyClaimed: outcome.alreadyClaimed,
-      note,
-    })
-    set({
-      pawns,
-      scores,
-      claimedCells,
-      ...logged,
-      turn: opponent,
-    })
-  },
-
-  resolveForcedMove: (to) => {
-    const state = get()
-    if (state.phase !== 'FORCED_MOVE' || !state.forcedMoveFor) return
-    const player = state.forcedMoveFor
-    const opponent: PlayerId = player === 'p1' ? 'p2' : 'p1'
-    const candidates = forcedMoveCandidates(player, state.pawns[opponent])
-    if (!candidates.includes(to)) return
-    const from = state.pawns[player]
-    const logged = appendLog(state, {
-      player,
-      from,
-      to,
-      kind: 'forced',
-      delta: 0,
-      note: '강제 이동 완료',
-    })
-    set({
-      pawns: { ...state.pawns, [player]: to },
-      forcedMoveFor: null,
-      phase: 'PLAYING',
-      turn: opponent,
-      ...logged,
-    })
   },
 
   resetGame: () => set({ ...createInitial() }),

@@ -27,9 +27,9 @@ export function Board() {
   const pawns = useGameStore((s) => s.pawns)
   const treasuresTaken = useGameStore((s) => s.treasuresTaken)
   const forcedMoveFor = useGameStore((s) => s.forcedMoveFor)
+  const pendingMove = useGameStore((s) => s.pendingMove)
   const togglePlacementMine = useGameStore((s) => s.togglePlacementMine)
-  const movePawn = useGameStore((s) => s.movePawn)
-  const resolveForcedMove = useGameStore((s) => s.resolveForcedMove)
+  const proposeMove = useGameStore((s) => s.proposeMove)
 
   const setupPlayer = useSetupPlayer()
 
@@ -52,12 +52,8 @@ export function Board() {
       togglePlacementMine(setupPlayer, id)
       return
     }
-    if (phase === 'PLAYING') {
-      movePawn(id)
-      return
-    }
-    if (phase === 'FORCED_MOVE') {
-      resolveForcedMove(id)
+    if (phase === 'PLAYING' || phase === 'FORCED_MOVE') {
+      proposeMove(id)
       return
     }
   }
@@ -110,6 +106,7 @@ export function Board() {
         setupPlayer !== null && mines[setupPlayer].has(id)
       const isForbidden = isForbiddenForMine(coord) && !isStartCell(coord)
       const isMoveTarget = moveTargets.has(id)
+      const isPendingMove = pendingMove === id
       rows.push(
         <Cell
           key={id}
@@ -120,6 +117,7 @@ export function Board() {
           isOwnMine={isOwnMine}
           isForbidden={isForbidden}
           isMoveTarget={isMoveTarget}
+          isPendingMove={isPendingMove}
           disabled={cellDisabled(id)}
           onClick={handleClick}
         />,

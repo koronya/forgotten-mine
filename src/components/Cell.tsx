@@ -10,6 +10,7 @@ interface Props {
   isOwnMine: boolean
   isForbidden: boolean
   isMoveTarget: boolean
+  isPendingMove: boolean
   disabled: boolean
   onClick: (id: CellId) => void
 }
@@ -24,6 +25,7 @@ export function Cell({
   isOwnMine,
   isForbidden,
   isMoveTarget,
+  isPendingMove,
   disabled,
   onClick,
 }: Props) {
@@ -35,6 +37,7 @@ export function Cell({
   if (pawn === 'p1') classNames.push(styles.cellPawnP1)
   if (pawn === 'p2') classNames.push(styles.cellPawnP2)
   if (isMoveTarget) classNames.push(styles.cellMoveTarget)
+  if (isPendingMove) classNames.push(styles.cellMovePending)
 
   let content: ReactNode = null
   if (pawn) content = PAWN_LABEL[pawn]

@@ -127,8 +127,9 @@ interface GameState {
 - `submitMines(player)` — 15개 채웠을 때만 통과. 이후 HANDOFF 단계로 전이.
 - `autoFillAndSubmit(player)` — 타이머 만료 시 허용 구역에서 부족분 랜덤 배치 후 제출.
 - `skipHandoff()` — HANDOFF_TO_P2 / HANDOFF_TO_PLAY → 다음 단계 진입.
-- `movePawn(to)` — PLAYING에서만. 검증 → 결과 해석 → 점수/강제이동/턴 교대 → 종료 체크.
-- `resolveForcedMove(to)` — FORCED_MOVE에서만. 후보 칸 중 하나로 이동 후 턴 교대.
+- `proposeMove(to)` — PLAYING/FORCED_MOVE 에서 합법 타겟이면 `pendingMove` 에 설정(즉시 이동하지 않음). 실수로 잘못 클릭했을 때를 방어.
+- `confirmPendingMove()` — `pendingMove` 값을 phase 별 실제 이동 로직(PLAYING → 점수·지뢰·보물 처리, FORCED_MOVE → 강제 이동 확정)으로 실행.
+- `cancelPendingMove()` — `pendingMove` 를 null 로 되돌림.
 - `resetGame()` — 전체 초기화.
 
 ### 이동 결과 해석 (`scoring.ts`)
@@ -148,9 +149,9 @@ interface GameState {
 - CSS Grid `grid-template-columns: 26px repeat(11, 44px)` — 좌측에 a~k 레이블, 상단에 1~11 레이블.
 - 각 `Cell`은 현재 phase와 말/보물/점수 상태에 따라 클래스 조건부 부여.
 - 셀 클릭 시 phase 분기:
-  - SETUP_*: `togglePlacementMine`
-  - PLAYING: `movePawn` (인접 칸일 때만 하이라이트/허용)
-  - FORCED_MOVE: `resolveForcedMove` (강제이동 후보만 하이라이트)
+  - SETUP_*: `togglePlacementMine` (즉시 토글)
+  - PLAYING / FORCED_MOVE: `proposeMove` — 합법 타겟이면 pending 으로 설정. 실제 이동은 PlayPanel 의 예/아니오 버튼으로 확정.
+- pendingMove 가 설정된 칸은 `cellMovePending` 클래스로 초록 강조되어 "선택됨" 처럼 보이게 한다. 다른 합법 타겟을 클릭하면 pending 이 새 칸으로 갱신되어 실수 보정이 쉽다.
 
 ### `Cell.tsx`
 - 기본: 좌표 텍스트(예: `f6`).
@@ -173,6 +174,7 @@ interface GameState {
 - **상단: 지뢰가 설치된 칸 수 공개** (규칙: "지뢰가 설치된 칸의 개수는 공개된다"). 양 플레이어 지뢰 Set의 합집합 크기로 계산하며, 지뢰가 밟혀 제거될 때마다 자동 감소.
 - 현재 턴(또는 강제이동 중 플레이어) 표시.
 - 수집된 보물 개수 / 3.
+- **pendingMove 확인 박스**: `pendingMove` 가 설정되면 "{cellId}으로 이동하시겠습니까?" 메시지 + **예 / 아니오** 버튼이 노출된다. 예 → `confirmPendingMove()`, 아니오 → `cancelPendingMove()`.
 - **"이번 이동 결과" 메시지 패널** — 가장 최근 `MoveEvent` 하나를 사람이 읽기 좋은 문장 + 큰 점수 변화로 표시. (누적 이동 로그는 UI에 노출하지 않음 — `moveLog` 자체는 최신 이벤트 참조용으로 store에만 유지.) `describeEvent` 분기:
   - `mine`: "당신은 지뢰를 밟았습니다!" + `-5`
   - `treasure`: "보물을 획득했습니다!" + `+10/15/20`
